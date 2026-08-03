@@ -189,12 +189,12 @@ export async function clearInventoryData(uid) {
   dispatchInventoryUpdated();
 }
 
-export async function deleteAllUserData(uid) {
+export async function deleteAllUserData(uid, { excludeCollections = [] } = {}) {
   if (!db || !uid) {
     return;
   }
 
-  const names = Object.values(COLLECTIONS);
+  const names = Object.values(COLLECTIONS).filter((name) => !excludeCollections.includes(name));
   const snapshots = await Promise.all(
     names.map((name) => getDocs(query(collection(db, name), where("userId", "==", uid))))
   );

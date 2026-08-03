@@ -3,7 +3,7 @@ import { Download, Plus, RefreshCw, Trash2, X } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useUserCollections } from "../hooks/useUserCollections";
 import { useLuaSync, INVENTORY_EXPECTED_FILES, NOVA_EXPECTED_FILES } from "../hooks/useLuaSync";
-import { clearInventoryData, deleteAllUserData } from "../services/dataService";
+import { clearInventoryData, deleteAllUserData, COLLECTIONS } from "../services/dataService";
 import PageHeader from "../components/ui/PageHeader";
 import { Card, CardBody, CardHeader } from "../components/ui/Card";
 import { Input } from "../components/ui/Field";
@@ -133,7 +133,9 @@ export default function SettingsPage() {
     setIsDeletingAll(true);
     setDangerMessage("Deleting all data...");
     try {
-      await deleteAllUserData(user.uid);
+      await deleteAllUserData(user.uid, {
+        excludeCollections: [COLLECTIONS.shoppingProfiles, COLLECTIONS.buffProfiles]
+      });
       await clearInventoryData(user.uid);
       await luaSync.resetAllSyncState();
       setDangerMessage("All data deleted.");
