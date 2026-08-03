@@ -7,6 +7,7 @@ import Button from "../components/ui/Button";
 import Badge from "../components/ui/Badge";
 import EmptyState from "../components/ui/EmptyState";
 import Spinner from "../components/ui/Spinner";
+import DuplicateCharacterReview from "../components/DuplicateCharacterReview";
 
 function formatDate(value) {
   if (!value) return "-";
@@ -98,6 +99,10 @@ export default function AdminPage() {
     [lootItems, selectedUserId]
   );
   const selectedLootVisible = selectedLoot.slice(0, 100);
+  const selectedRaidStatuses = useMemo(
+    () => raidStatuses.filter((item) => item.userId === selectedUserId),
+    [raidStatuses, selectedUserId]
+  );
 
   const onDeleteUserData = async () => {
     if (!selectedUserId || isDeleting) return;
@@ -278,6 +283,13 @@ export default function AdminPage() {
               </CardBody>
             </Card>
           </div>
+
+          <DuplicateCharacterReview
+            characters={selectedCharacters}
+            raidStatuses={selectedRaidStatuses}
+            lootItems={selectedLoot}
+            accounts={selectedAccounts}
+          />
         </>
       ) : null}
 

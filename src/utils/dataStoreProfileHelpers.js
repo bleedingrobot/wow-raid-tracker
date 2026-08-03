@@ -8,8 +8,11 @@ function hasAnyMarker(text, markers) {
   return markers.some((marker) => text.includes(marker));
 }
 
-function profileKey(name, realm) {
-  return `${normalize(name)}|${normalize(realm)}`;
+// accountHintName scopes the key so profiles from two different WoW accounts
+// that share a name+realm (bank-alt farms commonly do) never get merged into
+// one, per docs/identity-contract.md's Account Scoping Rule.
+function profileKey(name, realm, accountHintName) {
+  return `${normalize(accountHintName)}|${normalize(name)}|${normalize(realm)}`;
 }
 
 export function detectDataStoreSourceType(fileName, text) {
@@ -94,7 +97,7 @@ export function mergeInventoryProfiles(entries) {
   const byKey = new Map();
 
   entries.forEach((entry) => {
-    const key = profileKey(entry.characterName, entry.realm);
+    const key = profileKey(entry.characterName, entry.realm, entry.accountHintName);
     const existing = byKey.get(key);
 
     if (!existing) {
@@ -116,7 +119,7 @@ export function mergeCharacterProfiles(entries) {
   const byKey = new Map();
 
   entries.forEach((entry) => {
-    const key = profileKey(entry.characterName, entry.realm);
+    const key = profileKey(entry.characterName, entry.realm, entry.accountHintName);
     const existing = byKey.get(key);
 
     if (!existing) {
@@ -134,6 +137,6 @@ export function mergeCharacterProfiles(entries) {
   return [...byKey.values()];
 }
 
-export function characterProfileKey(name, realm) {
-  return profileKey(name, realm);
+export function characterProfileKey(name, realm, accountHintName) {
+  return profileKey(name, realm, accountHintName);
 }

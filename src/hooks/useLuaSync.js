@@ -80,8 +80,12 @@ function normalizeLoose(value) {
     .toLowerCase();
 }
 
-function characterKey(name, realm) {
-  return `${normalize(name)}|${normalize(realm)}`;
+// accountId scopes the key so that two different WoW accounts with a
+// same-name/same-realm character (common for bank-alt farms) are never
+// treated as one character, per docs/identity-contract.md's Account
+// Scoping Rule and canonical key (accountLabel|realm|characterName).
+function characterKey(name, realm, accountId) {
+  return `${normalize(accountId)}|${normalize(name)}|${normalize(realm)}`;
 }
 
 function characterLooseKey(name, realm) {
@@ -718,8 +722,14 @@ export function useLuaSync({ user, data }) {
           accountId: sourceAccountId
         })));
 
-        const savedEntries = parseNovaSavedInstances(source.text);
-        const activeEntries = parseNovaActiveInstances(source.text);
+        const savedEntries = parseNovaSavedInstances(source.text).map((entry) => ({
+          ...entry,
+          accountId: sourceAccountId
+        }));
+        const activeEntries = parseNovaActiveInstances(source.text).map((entry) => ({
+          ...entry,
+          accountId: sourceAccountId
+        }));
         parsed.push(...savedEntries);
         activeRaids.push(...activeEntries);
 
@@ -734,22 +744,30 @@ export function useLuaSync({ user, data }) {
         );
       }
 
+      // Falls back to the sole known account when a parsed/stored entity has no
+      // explicit accountId, so single-account setups keep colliding onto one
+      // key (unchanged behavior) while genuinely distinct accounts stay apart.
+      const defaultAccountId = data.accounts.length === 1 ? data.accounts[0].id : "";
+      const resolveKeyAccountId = (accountId) => accountId || defaultAccountId;
+
       const dedupedParsedCharacters = new Map();
       parsedCharacters.forEach((entry) => {
-        const key = characterKey(entry.name, entry.realm);
+        const key = characterKey(entry.name, entry.realm, resolveKeyAccountId(entry.accountId));
         if (!dedupedParsedCharacters.has(key)) {
           dedupedParsedCharacters.set(key, entry);
         }
       });
 
       const charactersByKey = new Map(
-        data.characters.map((character) => [characterKey(character.name, character.realm), character])
+        data.characters.map((character) => [
+          characterKey(character.name, character.realm, resolveKeyAccountId(character.accountId)),
+          character
+        ])
       );
       const createdCharacters = [];
-      const defaultAccountId = data.accounts.length === 1 ? data.accounts[0].id : "";
 
       for (const parsedCharacter of dedupedParsedCharacters.values()) {
-        const key = characterKey(parsedCharacter.name, parsedCharacter.realm);
+        const key = characterKey(parsedCharacter.name, parsedCharacter.realm, resolveKeyAccountId(parsedCharacter.accountId));
         if (!charactersByKey.has(key)) {
           const payload = {
             name: parsedCharacter.name,
@@ -796,7 +814,7 @@ export function useLuaSync({ user, data }) {
       const parsedByCharacter = new Map();
 
       parsed.forEach((entry) => {
-        const key = characterKey(entry.characterName, entry.realm);
+        const key = characterKey(entry.characterName, entry.realm, resolveKeyAccountId(entry.accountId));
         if (!parsedByCharacter.has(key)) {
           parsedByCharacter.set(key, []);
         }
@@ -806,7 +824,7 @@ export function useLuaSync({ user, data }) {
       const raidStatusUpdates = [];
 
       allCharacters.forEach((character) => {
-        const key = characterKey(character.name, character.realm);
+        const key = characterKey(character.name, character.realm, resolveKeyAccountId(character.accountId));
         if (!parsedByCharacter.has(key)) {
           return;
         }
@@ -832,7 +850,7 @@ export function useLuaSync({ user, data }) {
 
       const worldBuffStateByCharacter = new Map();
       parsedWorldBuffStates.forEach((entry) => {
-        const key = characterKey(entry.name, entry.realm);
+        const key = characterKey(entry.name, entry.realm, resolveKeyAccountId(entry.accountId));
         const existing = worldBuffStateByCharacter.get(key);
 
         if (!existing) {
@@ -861,7 +879,7 @@ export function useLuaSync({ user, data }) {
 
       const buffUpdateOps = [];
       allCharacters.forEach((character) => {
-        const key = characterKey(character.name, character.realm);
+        const key = characterKey(character.name, character.realm, resolveKeyAccountId(character.accountId));
         const buffState = worldBuffStateByCharacter.get(key);
         if (!buffState) {
           return;
@@ -1197,11 +1215,20 @@ export function useLuaSync({ user, data }) {
         }
       }
 
+      // Same single-account fallback as the Nova sync path: keeps single-account
+      // setups keying identically to before, while genuinely distinct accounts
+      // (bank-alt farms with a same-name/realm character on each) stay apart.
+      const defaultAccountId = data.accounts.length === 1 ? data.accounts[0].id : "";
+      const resolveKeyAccountId = (accountId) => accountId || defaultAccountId;
+
       const charactersByKey = new Map(
-        data.characters.map((character) => [characterProfileKey(character.name, character.realm), character])
+        data.characters.map((character) => [
+          characterProfileKey(character.name, character.realm, resolveKeyAccountId(character.accountId)),
+          character
+        ])
       );
       const createOrGetCharacter = async (profile) => {
-        const key = characterProfileKey(profile.characterName, profile.realm);
+        const key = characterProfileKey(profile.characterName, profile.realm, resolveKeyAccountId(profile.accountId));
         const existing = charactersByKey.get(key);
         if (existing) {
           return existing;
@@ -1238,7 +1265,9 @@ export function useLuaSync({ user, data }) {
       const profileOps = [];
 
       mergedInventoryProfiles.forEach((profile) => {
-        const character = charactersByKey.get(characterProfileKey(profile.characterName, profile.realm));
+        const character = charactersByKey.get(
+          characterProfileKey(profile.characterName, profile.realm, resolveKeyAccountId(profile.accountId))
+        );
         if (!character) {
           return;
         }
@@ -1255,7 +1284,9 @@ export function useLuaSync({ user, data }) {
       });
 
       mergedCharacterProfiles.forEach((profile) => {
-        const character = charactersByKey.get(characterProfileKey(profile.characterName, profile.realm));
+        const character = charactersByKey.get(
+          characterProfileKey(profile.characterName, profile.realm, resolveKeyAccountId(profile.accountId))
+        );
         if (!character) {
           return;
         }

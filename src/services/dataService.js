@@ -90,6 +90,14 @@ export function upsertRaidStatus(uid, payload) {
   });
 }
 
+export function updateRaidStatus(raidStatusId, payload) {
+  return updateDoc(doc(db, COLLECTIONS.raidStatuses, raidStatusId), payload);
+}
+
+export function deleteRaidStatus(raidStatusId) {
+  return deleteDoc(doc(db, COLLECTIONS.raidStatuses, raidStatusId));
+}
+
 export function addLootItem(uid, payload) {
   return addDoc(collection(db, COLLECTIONS.lootItems), {
     userId: uid,
