@@ -1,5 +1,7 @@
 # Raid Tracker
 
+**Live: [bleedingrobot.github.io/wow-raid-tracker](https://bleedingrobot.github.io/wow-raid-tracker/)**
+
 A WoW Classic companion app to track characters, raid lockouts, loot wishlists, inventory, shopping lists, buff readiness, and rested XP across accounts.
 
 This is a from-scratch rebuild of an earlier version of the app, with a lighter/more modern UI and a handful of correctness fixes (see [docs/architecture.md](docs/architecture.md) for details on what changed).
