@@ -107,7 +107,10 @@ function DocRow({ doc, accountLabel, checked, onToggle, selectable }) {
 }
 
 export default function DuplicateCharacterReview({ characters, raidStatuses, lootItems, accounts }) {
-  const groups = useMemo(() => findDuplicateCharacterGroups(characters), [characters]);
+  const groups = useMemo(
+    () => findDuplicateCharacterGroups(characters, accounts),
+    [characters, accounts]
+  );
   const accountLabelById = useMemo(
     () => new Map(accounts.map((account) => [account.id, account.battleNetId])),
     [accounts]

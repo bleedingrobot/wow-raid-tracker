@@ -25,15 +25,24 @@ function completenessScore(character) {
 
 // confidence:
 // - "auto": exactly one Nova-sourced doc + one DataStore-sourced doc, no
-//   conflicting accountId — the classic split-duplicate signature, safe to
-//   suggest merging as a single pair.
-// - "distinct": docs carry two or more different accountId values — these
-//   are almost certainly separate real characters (e.g. same-named alts on
-//   different WoW accounts), not duplicates. Shown for visibility only.
+//   conflicting account label — the classic split-duplicate signature, safe
+//   to suggest merging as a single pair.
+// - "distinct": docs resolve to two or more different account labels —
+//   these are almost certainly separate real characters (e.g. same-named
+//   alts on different WoW accounts), not duplicates. Shown for visibility.
 // - "manual": anything else (3+ docs, or 2 docs that aren't one-Nova/one-
 //   DataStore) — ambiguous, needs a human to pick which docs actually belong
 //   together.
-export function findDuplicateCharacterGroups(characters) {
+//
+// Accounts are compared by their resolved battleNetId label, not the raw
+// accountId doc reference: a stale-closure race in the sync pipeline (fixed
+// separately in dataService.addAccount) could previously create two
+// `accounts` docs with the same label, which made same-account duplicate
+// characters look like they belonged to different accounts.
+export function findDuplicateCharacterGroups(characters, accounts = []) {
+  const accountLabelById = new Map(accounts.map((account) => [account.id, normalize(account.battleNetId)]));
+  const resolveAccountLabel = (character) => accountLabelById.get(character.accountId) || normalize(character.accountId);
+
   const byKey = new Map();
 
   characters.forEach((character) => {
@@ -49,14 +58,14 @@ export function findDuplicateCharacterGroups(characters) {
     .map(([key, docs]) => {
       const novaDocs = docs.filter((doc) => doc.importedFromNova);
       const dataStoreDocs = docs.filter((doc) => doc.importedFromDataStore);
-      const accountIds = new Set(docs.map((doc) => doc.accountId).filter(Boolean));
+      const accountLabels = new Set(docs.map(resolveAccountLabel).filter(Boolean));
 
       let confidence = "manual";
       let reason = "Multiple characters share this name/realm — review before merging.";
 
-      if (accountIds.size > 1) {
+      if (accountLabels.size > 1) {
         confidence = "distinct";
-        reason = "These docs have different accountId values, so they're likely separate real characters (e.g. alts on different WoW accounts), not duplicates.";
+        reason = "These docs resolve to different account labels, so they're likely separate real characters (e.g. alts on different WoW accounts), not duplicates.";
       } else if (docs.length === 2 && novaDocs.length === 1 && dataStoreDocs.length === 1) {
         confidence = "auto";
         reason = "One Nova-sourced doc + one DataStore-sourced doc with no conflicting account — the typical split-duplicate pattern from the sync bug.";

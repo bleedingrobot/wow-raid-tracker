@@ -3,6 +3,7 @@ import {
   collection,
   deleteDoc,
   doc,
+  getDoc,
   getDocs,
   onSnapshot,
   query,
@@ -51,12 +52,32 @@ export function subscribeAllCollection(collectionName, callback) {
   });
 }
 
-export function addAccount(uid, battleNetId) {
-  return addDoc(collection(db, COLLECTIONS.accounts), {
+// Deterministic per-(user, battleNetId) doc id. Nova sync and DataStore/
+// Bagnon sync each resolve accounts independently and can both run before
+// either's write is visible to the other (they close over the same
+// pre-sync `data.accounts` snapshot), so a naive addDoc()-if-not-found
+// races and creates two account docs for the same real account. Keying by
+// content instead of timing makes repeat calls a no-op.
+function accountDocId(uid, battleNetId) {
+  const normalized = String(battleNetId || "").trim().toLowerCase().replace(/[/]/g, "_");
+  return `${uid}__${normalized}`;
+}
+
+export async function addAccount(uid, battleNetId) {
+  const id = accountDocId(uid, battleNetId);
+  const ref = doc(db, COLLECTIONS.accounts, id);
+  const existing = await getDoc(ref);
+
+  const payload = {
     userId: uid,
-    battleNetId,
-    createdAt: new Date().toISOString()
-  });
+    battleNetId: String(battleNetId || "").trim()
+  };
+  if (!existing.exists()) {
+    payload.createdAt = new Date().toISOString();
+  }
+
+  await setDoc(ref, payload, { merge: true });
+  return { id };
 }
 
 export function deleteAccount(accountId) {
