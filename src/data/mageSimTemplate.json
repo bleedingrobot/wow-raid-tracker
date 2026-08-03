@@ -1,0 +1,176 @@
+{
+  "settings": {
+    "iterations": 3000,
+    "phase": 6,
+    "showDamageMetrics": true,
+    "language": "en",
+    "faction": "Alliance",
+    "filters": {
+      "oneHandedWeapons": true,
+      "twoHandedWeapons": true
+    }
+  },
+  "raidBuffs": {
+    "giftOfTheWild": "TristateEffectImproved",
+    "arcaneBrilliance": true,
+    "divineSpirit": true,
+    "moonkinAura": true,
+    "manaSpringTotem": "TristateEffectRegular"
+  },
+  "debuffs": {
+    "wintersChill": true,
+    "improvedScorch": true
+  },
+  "partyBuffs": {},
+  "player": {
+    "name": "Player",
+    "race": "RaceTroll",
+    "class": "ClassMage",
+    "equipment": {
+      "items": [
+        {
+          "id": 14332,
+          "randomSuffix": 1979,
+          "enchant": 1509
+        },
+        {
+          "id": 12103
+        },
+        {
+          "id": 11782
+        },
+        {
+          "id": 13386,
+          "randomSuffix": 1965
+        },
+        {
+          "id": 14152,
+          "enchant": 1891
+        },
+        {
+          "id": 11766,
+          "randomSuffix": 1965,
+          "enchant": 1883
+        },
+        {
+          "id": 13253
+        },
+        {
+          "id": 11662
+        },
+        {
+          "id": 13170,
+          "enchant": 1509
+        },
+        {
+          "id": 10247,
+          "randomSuffix": 1971,
+          "enchant": 911
+        },
+        {
+          "id": 942
+        },
+        {
+          "id": 942
+        },
+        {
+          "id": 13968
+        },
+        {
+          "id": 12930
+        },
+        {
+          "id": 13964,
+          "enchant": 2504
+        },
+        {
+          "id": 10796,
+          "randomSuffix": 1965
+        },
+        {
+          "id": 15283,
+          "randomSuffix": 1959
+        }
+      ]
+    },
+    "consumes": {
+      "flask": "FlaskOfSupremePower",
+      "food": "FoodRunnTumTuberSurprise",
+      "manaRegenElixir": "MagebloodPotion",
+      "spellPowerBuff": "GreaterArcaneElixir",
+      "firePowerBuff": "ElixirOfGreaterFirepower",
+      "frostPowerBuff": "ElixirOfFrostPower",
+      "mainHandImbue": "BrilliantWizardOil",
+      "defaultPotion": "MajorManaPotion",
+      "defaultConjured": "ConjuredDemonicRune",
+      "zanzaBuff": "CerebralCortexCompound"
+    },
+    "bonusStats": {
+      "stats": [
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+      ],
+      "pseudoStats": [
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+      ]
+    },
+    "itemSwap": {},
+    "buffs": {
+      "rallyingCryOfTheDragonslayer": true,
+      "saygesFortune": "SaygesDamage",
+      "spiritOfZandalar": true,
+      "songflowerSerenade": true,
+      "warchiefsBlessing": true,
+      "slipkiksSavvy": true
+    },
+    "talentsString": "230205021002--05353203102351001",
+    "profession1": "Alchemy",
+    "profession2": "Tailoring",
+    "cooldowns": {},
+    "rotation": {
+      "type": "TypeAuto"
+    },
+    "reactionTimeMs": 200,
+    "distanceFromTarget": 20,
+    "isbSbFrequency": 3,
+    "isbCrit": 25,
+    "isbWarlocks": 1,
+    "stormstrikeFrequency": 20,
+    "stormstrikeNatureAttackerFrequency": 4,
+    "healingModel": {},
+    "mage": {
+      "options": {
+        "armor": "MoltenArmor"
+      }
+    }
+  },
+  "encounter": {
+    "duration": 120,
+    "durationVariation": 15,
+    "executeProportion20": 0.2,
+    "executeProportion25": 0.25,
+    "executeProportion35": 0.35,
+    "targets": [
+      {
+        "id": 213336,
+        "name": "Level 60",
+        "level": 63,
+        "stats": [
+          0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,805,0,0,0,0,0,0,0,0,3731,0,0,0,0,0,0,0,127393,0,0,0,0,0,0,0,0,0
+        ],
+        "minBaseDamage": 3000,
+        "damageSpread": 0.3333,
+        "swingSpeed": 2,
+        "parryHaste": true
+      }
+    ]
+  },
+  "epWeightsStats": {
+    "stats": [
+      0,0,0,0.49,0,1,1,1,1,0,0,0,0.11,18.59,13.91,6.85,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0.5,0,0,0,0,0,1,0
+    ],
+    "pseudoStats": [
+      0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+    ]
+  },
+  "epRatios": [1,0,0,0,0,0]
+}
