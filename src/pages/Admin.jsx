@@ -8,6 +8,7 @@ import Badge from "../components/ui/Badge";
 import EmptyState from "../components/ui/EmptyState";
 import Spinner from "../components/ui/Spinner";
 import DuplicateCharacterReview from "../components/DuplicateCharacterReview";
+import DuplicateAccountReview from "../components/DuplicateAccountReview";
 
 function formatDate(value) {
   if (!value) return "-";
@@ -283,6 +284,8 @@ export default function AdminPage() {
               </CardBody>
             </Card>
           </div>
+
+          <DuplicateAccountReview accounts={selectedAccounts} characters={selectedCharacters} />
 
           <DuplicateCharacterReview
             characters={selectedCharacters}
