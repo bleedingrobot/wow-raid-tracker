@@ -1,14 +1,12 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Download, Plus, RefreshCw, Trash2, X } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
-import { RAIDS } from "../data/raids";
 import { useUserCollections } from "../hooks/useUserCollections";
 import { useLuaSync, INVENTORY_EXPECTED_FILES, NOVA_EXPECTED_FILES } from "../hooks/useLuaSync";
-import { clearInventoryData, deleteAllUserData, updateCharacter } from "../services/dataService";
-import { getCharacterFilterOptions, matchesCharacterFilters, resolveRaidTagLabel } from "../utils/characterFilters";
+import { clearInventoryData, deleteAllUserData } from "../services/dataService";
 import PageHeader from "../components/ui/PageHeader";
 import { Card, CardBody, CardHeader } from "../components/ui/Card";
-import { FormRow, Input, Select } from "../components/ui/Field";
+import { Input } from "../components/ui/Field";
 import Button from "../components/ui/Button";
 import Badge from "../components/ui/Badge";
 import EmptyState from "../components/ui/EmptyState";
@@ -74,39 +72,9 @@ export default function SettingsPage() {
   const { data } = useUserCollections(user?.uid);
   const luaSync = useLuaSync({ user, data });
 
-  const [searchTerm, setSearchTerm] = useState("");
-  const [classFilter, setClassFilter] = useState("all");
-  const [realmFilter, setRealmFilter] = useState("all");
-  const [accountFilter, setAccountFilter] = useState("all");
-  const [minLevelFilter, setMinLevelFilter] = useState("");
-  const [visibilityFilter, setVisibilityFilter] = useState("all");
-  const [activeRaidTagFilter, setActiveRaidTagFilter] = useState("all");
-  const [savingCharacterId, setSavingCharacterId] = useState("");
   const [isClearingInventory, setIsClearingInventory] = useState(false);
   const [isDeletingAll, setIsDeletingAll] = useState(false);
   const [dangerMessage, setDangerMessage] = useState("");
-
-  const accountNameById = useMemo(
-    () => new Map(data.accounts.map((account) => [account.id, account.battleNetId])),
-    [data.accounts]
-  );
-  const filterOptions = useMemo(
-    () => getCharacterFilterOptions(data.characters, accountNameById),
-    [data.characters, accountNameById]
-  );
-  const filteredCharacters = useMemo(
-    () => data.characters.filter((character) => matchesCharacterFilters(character, {
-      searchTerm,
-      classFilter,
-      factionFilter: "all",
-      realmFilter,
-      accountFilter,
-      minLevelFilter,
-      visibilityFilter,
-      activeRaidTagFilter
-    }, accountNameById)),
-    [data.characters, searchTerm, classFilter, realmFilter, accountFilter, minLevelFilter, visibilityFilter, activeRaidTagFilter, accountNameById]
-  );
 
   if (!hasFirebaseConfig) {
     return (
@@ -133,24 +101,6 @@ export default function SettingsPage() {
   const totalExpected = NOVA_EXPECTED_FILES.length + INVENTORY_EXPECTED_FILES.length;
   const totalLinked = luaSync.novaLinkedSummary.linkedCount + luaSync.inventoryLinkedSummary.linkedCount;
   const isBusy = luaSync.isSyncing || luaSync.isBagnonSyncing;
-
-  const onToggleDashboardVisibility = async (characterId, checked) => {
-    setSavingCharacterId(characterId);
-    try {
-      await updateCharacter(characterId, { showOnDashboard: checked });
-    } finally {
-      setSavingCharacterId("");
-    }
-  };
-
-  const onChangeActiveRaidTag = async (characterId, activeRaidTag) => {
-    setSavingCharacterId(characterId);
-    try {
-      await updateCharacter(characterId, { activeRaidTag });
-    } finally {
-      setSavingCharacterId("");
-    }
-  };
 
   const onClearBagnonInventory = async () => {
     if (!window.confirm("Clear synced inventory data for your account? You can re-sync at any time.")) {
@@ -475,110 +425,6 @@ export default function SettingsPage() {
               </CardBody>
             </Card>
           ) : null}
-        </CardBody>
-      </Card>
-
-      <Card className="mb-6">
-        <CardHeader title="Character Tags & Visibility" subtitle="Tag active raiders and control who appears on dashboard and inventory views." />
-        <CardBody className="space-y-4">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            <FormRow label="Search">
-              <Input
-                value={searchTerm}
-                onChange={(event) => setSearchTerm(event.target.value)}
-                placeholder="Name, realm, account, or raid tag"
-              />
-            </FormRow>
-            <FormRow label="Class">
-              <Select value={classFilter} onChange={(event) => setClassFilter(event.target.value)}>
-                <option value="all">All classes</option>
-                {filterOptions.classOptions.map((option) => (
-                  <option key={option} value={option}>{option}</option>
-                ))}
-              </Select>
-            </FormRow>
-            <FormRow label="Realm">
-              <Select value={realmFilter} onChange={(event) => setRealmFilter(event.target.value)}>
-                <option value="all">All realms</option>
-                {filterOptions.realmOptions.map((option) => (
-                  <option key={option} value={option}>{option}</option>
-                ))}
-              </Select>
-            </FormRow>
-            <FormRow label="Account">
-              <Select value={accountFilter} onChange={(event) => setAccountFilter(event.target.value)}>
-                <option value="all">All accounts</option>
-                {filterOptions.accountOptions.map((option) => (
-                  <option key={option.value} value={option.value}>{option.label}</option>
-                ))}
-              </Select>
-            </FormRow>
-            <FormRow label="Visibility">
-              <Select value={visibilityFilter} onChange={(event) => setVisibilityFilter(event.target.value)}>
-                <option value="all">All visibility</option>
-                <option value="visible">Shown on dashboard</option>
-                <option value="hidden">Hidden from dashboard</option>
-              </Select>
-            </FormRow>
-            <FormRow label="Raid tag">
-              <Select value={activeRaidTagFilter} onChange={(event) => setActiveRaidTagFilter(event.target.value)}>
-                <option value="all">All raid tags</option>
-                <option value="tagged">Tagged only</option>
-                <option value="untagged">Untagged only</option>
-                {filterOptions.activeRaidTagOptions.map((option) => (
-                  <option key={option} value={option}>{resolveRaidTagLabel(option, RAIDS)}</option>
-                ))}
-              </Select>
-            </FormRow>
-            <FormRow label="Min level">
-              <Input
-                type="number"
-                min="0"
-                step="1"
-                value={minLevelFilter}
-                onChange={(event) => setMinLevelFilter(event.target.value)}
-                placeholder="Min level"
-              />
-            </FormRow>
-          </div>
-
-          {filteredCharacters.length ? (
-            <ul className="divide-y divide-border">
-              {filteredCharacters.map((character) => (
-                <li key={character.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
-                  <span className="text-sm text-ink">
-                    {character.name} — {character.realm} —{" "}
-                    {character.accountId ? accountNameById.get(character.accountId) || "Unknown account" : "Unassigned"} — L{character.level ?? "?"}
-                    {character.activeRaidTag ? ` — ${resolveRaidTagLabel(character.activeRaidTag, RAIDS)}` : ""}
-                  </span>
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Select
-                      className="w-auto"
-                      value={character.activeRaidTag || ""}
-                      disabled={savingCharacterId === character.id}
-                      onChange={(event) => onChangeActiveRaidTag(character.id, event.target.value)}
-                    >
-                      <option value="">No raid tag</option>
-                      {RAIDS.map((raid) => (
-                        <option key={raid.name} value={raid.name}>{raid.short} — {raid.name}</option>
-                      ))}
-                    </Select>
-                    <label className="flex items-center gap-1.5 text-sm text-ink">
-                      <input
-                        type="checkbox"
-                        checked={character.showOnDashboard !== false}
-                        disabled={savingCharacterId === character.id}
-                        onChange={(event) => onToggleDashboardVisibility(character.id, event.target.checked)}
-                      />
-                      Show
-                    </label>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <EmptyState title="No matches" description="No characters match these settings filters." />
-          )}
         </CardBody>
       </Card>
 
