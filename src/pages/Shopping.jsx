@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useUserCollections } from "../hooks/useUserCollections";
+import { useInventory } from "../hooks/useInventory";
 import {
   addShoppingProfile,
   deleteShoppingProfile,
   updateShoppingProfile
 } from "../services/dataService";
+import { computeShoppingNeeds } from "../utils/shoppingList";
 import PageHeader from "../components/ui/PageHeader";
 import { Card, CardBody, CardHeader } from "../components/ui/Card";
 import { FormRow, Input, Select } from "../components/ui/Field";
@@ -23,9 +25,147 @@ const EMPTY_PROFILE = {
   items: []
 };
 
+function BuyListSummary({ characters, accountNameById, profiles, inventoryItems }) {
+  const [classFilter, setClassFilter] = useState("all");
+  const [minLevelFilter, setMinLevelFilter] = useState("");
+
+  const filteredCharacters = useMemo(() => {
+    const levelThreshold = Number(minLevelFilter);
+    const hasLevelThreshold = minLevelFilter !== "" && !Number.isNaN(levelThreshold);
+
+    return characters.filter((character) => {
+      const classMatch = classFilter === "all" || character.class === classFilter;
+      const levelValue = Number(character.level);
+      const levelMatch = !hasLevelThreshold || (!Number.isNaN(levelValue) && levelValue >= levelThreshold);
+      return classMatch && levelMatch;
+    });
+  }, [characters, classFilter, minLevelFilter]);
+
+  const { totals, mailList } = useMemo(() => {
+    const totalsByKey = new Map();
+    const mail = [];
+
+    filteredCharacters.forEach((character) => {
+      const needs = computeShoppingNeeds(character, profiles, inventoryItems, {
+        accountName: accountNameById.get(character.accountId) || ""
+      });
+
+      if (!needs.length) {
+        return;
+      }
+
+      mail.push({ character, needs });
+
+      needs.forEach((need) => {
+        const key = need.itemName.trim().toLowerCase();
+        const existing = totalsByKey.get(key);
+        if (existing) {
+          existing.total += need.need;
+        } else {
+          totalsByKey.set(key, { itemName: need.itemName, total: need.need });
+        }
+      });
+    });
+
+    const totals = Array.from(totalsByKey.values()).sort((a, b) => a.itemName.localeCompare(b.itemName));
+    mail.sort((a, b) => a.character.name.localeCompare(b.character.name));
+
+    return { totals, mailList: mail };
+  }, [filteredCharacters, profiles, inventoryItems, accountNameById]);
+
+  return (
+    <Card className="mb-6">
+      <CardHeader
+        title="Buy List"
+        subtitle="Total consumables needed to top up every matching character, and who to mail them to."
+      />
+      <CardBody className="space-y-5">
+        <div className="grid gap-3 sm:grid-cols-2 sm:max-w-md">
+          <FormRow label="Class">
+            <Select value={classFilter} onChange={(event) => setClassFilter(event.target.value)}>
+              <option value="all">All classes</option>
+              {WOW_CLASSES.map((cls) => (
+                <option key={cls} value={cls}>{cls}</option>
+              ))}
+            </Select>
+          </FormRow>
+          <FormRow label="Min level">
+            <Input
+              type="number"
+              min="0"
+              step="1"
+              value={minLevelFilter}
+              onChange={(event) => setMinLevelFilter(event.target.value)}
+              placeholder="e.g. 60"
+            />
+          </FormRow>
+        </div>
+
+        {!filteredCharacters.length ? (
+          <EmptyState
+            title="No characters match"
+            description="Adjust the class or level filter to see who needs consumables."
+          />
+        ) : !totals.length ? (
+          <EmptyState
+            title="Fully stocked"
+            description="No shortfalls found for the matching characters. Make sure a shopping profile is set up for their class below."
+          />
+        ) : (
+          <div className="grid gap-6 lg:grid-cols-2">
+            <div>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-faint">
+                Total to Buy
+              </p>
+              <ul className="divide-y divide-border rounded-lg border border-border">
+                {totals.map((item) => (
+                  <li key={item.itemName} className="flex items-center justify-between gap-4 px-3 py-2 text-sm">
+                    <span className="min-w-0 truncate text-ink">{item.itemName}</span>
+                    <span className="shrink-0 font-medium text-ink">{item.total}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div>
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-faint">
+                Who to Mail
+              </p>
+              <ul className="space-y-3">
+                {mailList.map(({ character, needs }) => (
+                  <li key={character.id} className="rounded-lg border border-border px-3 py-2">
+                    <p className="text-sm font-medium text-ink">
+                      {character.name}
+                      {character.realm ? <span className="text-ink-soft"> &mdash; {character.realm}</span> : null}
+                    </p>
+                    <ul className="mt-1 space-y-0.5">
+                      {needs.map((need) => (
+                        <li key={need.itemName} className="flex items-center justify-between gap-4 text-sm text-ink-soft">
+                          <span className="min-w-0 truncate">{need.itemName}</span>
+                          <span className="shrink-0">x{need.need}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        )}
+      </CardBody>
+    </Card>
+  );
+}
+
 export default function ShoppingPage() {
   const { user } = useAuth();
   const { data } = useUserCollections(user?.uid);
+  const inventoryItems = useInventory(user?.uid);
+
+  const accountNameById = useMemo(
+    () => new Map(data.accounts.map((account) => [account.id, account.battleNetId])),
+    [data.accounts]
+  );
 
   const [selectedId, setSelectedId] = useState(null);
   const [form, setForm] = useState({ ...EMPTY_PROFILE });
@@ -176,6 +316,13 @@ export default function ShoppingPage() {
   return (
     <div>
       <PageHeader title="Shopping Profiles" subtitle="Define what each class should carry into raid." />
+
+      <BuyListSummary
+        characters={data.characters}
+        accountNameById={accountNameById}
+        profiles={profiles}
+        inventoryItems={inventoryItems}
+      />
 
       <div className="grid gap-6 lg:grid-cols-[360px_1fr]">
         <Card className="h-fit">
