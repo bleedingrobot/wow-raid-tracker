@@ -32,20 +32,26 @@ function normalizeName(value) {
 }
 
 function useBuyList(characters, accountNameById, profiles, inventoryItems) {
-  const [classFilter, setClassFilter] = useState("all");
+  const [classFilters, setClassFilters] = useState([]);
   const [minLevelFilter, setMinLevelFilter] = useState("");
+
+  const toggleClassFilter = (cls) => {
+    setClassFilters((prev) =>
+      prev.includes(cls) ? prev.filter((entry) => entry !== cls) : [...prev, cls]
+    );
+  };
 
   const filteredCharacters = useMemo(() => {
     const levelThreshold = Number(minLevelFilter);
     const hasLevelThreshold = minLevelFilter !== "" && !Number.isNaN(levelThreshold);
 
     return characters.filter((character) => {
-      const classMatch = classFilter === "all" || character.class === classFilter;
+      const classMatch = !classFilters.length || classFilters.includes(character.class);
       const levelValue = Number(character.level);
       const levelMatch = !hasLevelThreshold || (!Number.isNaN(levelValue) && levelValue >= levelThreshold);
       return classMatch && levelMatch;
     });
-  }, [characters, classFilter, minLevelFilter]);
+  }, [characters, classFilters, minLevelFilter]);
 
   const { totals, mailList } = useMemo(() => {
     const totalsByKey = new Map();
@@ -80,8 +86,8 @@ function useBuyList(characters, accountNameById, profiles, inventoryItems) {
   }, [filteredCharacters, profiles, inventoryItems, accountNameById]);
 
   return {
-    classFilter,
-    setClassFilter,
+    classFilters,
+    toggleClassFilter,
     minLevelFilter,
     setMinLevelFilter,
     filteredCharacters,
@@ -90,7 +96,7 @@ function useBuyList(characters, accountNameById, profiles, inventoryItems) {
   };
 }
 
-function BuyListSummary({ classFilter, setClassFilter, minLevelFilter, setMinLevelFilter, filteredCharacters, totals, mailList }) {
+function BuyListSummary({ classFilters, toggleClassFilter, minLevelFilter, setMinLevelFilter, filteredCharacters, totals, mailList }) {
   return (
     <Card className="mb-6">
       <CardHeader
@@ -98,14 +104,24 @@ function BuyListSummary({ classFilter, setClassFilter, minLevelFilter, setMinLev
         subtitle="Total consumables needed to top up every matching character, and who to mail them to."
       />
       <CardBody className="space-y-5">
-        <div className="grid gap-3 sm:grid-cols-2 sm:max-w-md">
-          <FormRow label="Class">
-            <Select value={classFilter} onChange={(event) => setClassFilter(event.target.value)}>
-              <option value="all">All classes</option>
-              {WOW_CLASSES.map((cls) => (
-                <option key={cls} value={cls}>{cls}</option>
-              ))}
-            </Select>
+        <div className="grid gap-4 sm:grid-cols-[1fr_160px]">
+          <FormRow label="Class" hint="Click to toggle. Leave none selected to include every class.">
+            <div className="flex flex-wrap gap-1.5">
+              {WOW_CLASSES.map((cls) => {
+                const active = classFilters.includes(cls);
+                return (
+                  <Button
+                    key={cls}
+                    type="button"
+                    size="sm"
+                    variant={active ? "primary" : "secondary"}
+                    onClick={() => toggleClassFilter(cls)}
+                  >
+                    {cls}
+                  </Button>
+                );
+              })}
+            </div>
           </FormRow>
           <FormRow label="Min level">
             <Input
@@ -416,8 +432,8 @@ export default function ShoppingPage() {
       <PageHeader title="Shopping Profiles" subtitle="Define what each class should carry into raid." />
 
       <BuyListSummary
-        classFilter={buyList.classFilter}
-        setClassFilter={buyList.setClassFilter}
+        classFilters={buyList.classFilters}
+        toggleClassFilter={buyList.toggleClassFilter}
         minLevelFilter={buyList.minLevelFilter}
         setMinLevelFilter={buyList.setMinLevelFilter}
         filteredCharacters={buyList.filteredCharacters}
