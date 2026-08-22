@@ -25,7 +25,13 @@ const EMPTY_PROFILE = {
   items: []
 };
 
-function BuyListSummary({ characters, accountNameById, profiles, inventoryItems }) {
+const BANK_CHARACTER_NAMES = ["bleedsbank", "bleedbanker"];
+
+function normalizeName(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function useBuyList(characters, accountNameById, profiles, inventoryItems) {
   const [classFilter, setClassFilter] = useState("all");
   const [minLevelFilter, setMinLevelFilter] = useState("");
 
@@ -73,6 +79,18 @@ function BuyListSummary({ characters, accountNameById, profiles, inventoryItems 
     return { totals, mailList: mail };
   }, [filteredCharacters, profiles, inventoryItems, accountNameById]);
 
+  return {
+    classFilter,
+    setClassFilter,
+    minLevelFilter,
+    setMinLevelFilter,
+    filteredCharacters,
+    totals,
+    mailList
+  };
+}
+
+function BuyListSummary({ classFilter, setClassFilter, minLevelFilter, setMinLevelFilter, filteredCharacters, totals, mailList }) {
   return (
     <Card className="mb-6">
       <CardHeader
@@ -157,6 +175,85 @@ function BuyListSummary({ characters, accountNameById, profiles, inventoryItems 
   );
 }
 
+function BankStockCard({ totals, inventoryItems }) {
+  const bankHoldings = useMemo(() => {
+    if (!totals.length) {
+      return [];
+    }
+
+    const neededKeys = new Set(totals.map((item) => item.itemName.trim().toLowerCase()));
+    const displayNameByKey = new Map(totals.map((item) => [item.itemName.trim().toLowerCase(), item.itemName]));
+    const holdingsByCharacter = new Map();
+
+    inventoryItems.forEach((item) => {
+      const charKey = normalizeName(item.characterName);
+      if (!BANK_CHARACTER_NAMES.includes(charKey)) {
+        return;
+      }
+
+      const itemKey = String(item.itemName || "").trim().toLowerCase();
+      if (!neededKeys.has(itemKey)) {
+        return;
+      }
+
+      if (!holdingsByCharacter.has(charKey)) {
+        holdingsByCharacter.set(charKey, { displayName: item.characterName, items: new Map() });
+      }
+
+      const holding = holdingsByCharacter.get(charKey);
+      const safeCount = Number(item.count) > 0 ? Number(item.count) : 1;
+      holding.items.set(itemKey, (holding.items.get(itemKey) || 0) + safeCount);
+    });
+
+    return BANK_CHARACTER_NAMES
+      .map((charKey) => holdingsByCharacter.get(charKey))
+      .filter(Boolean)
+      .map((holding) => ({
+        characterName: holding.displayName,
+        items: Array.from(holding.items.entries())
+          .map(([key, count]) => ({ itemName: displayNameByKey.get(key) || key, count }))
+          .sort((a, b) => a.itemName.localeCompare(b.itemName))
+      }));
+  }, [totals, inventoryItems]);
+
+  return (
+    <Card className="mb-6">
+      <CardHeader
+        title="Bank Alt Stock Check"
+        subtitle="Whether Bleedsbank or Bleedbanker already have any of the Total to Buy items, before you buy more."
+      />
+      <CardBody>
+        {!totals.length ? (
+          <EmptyState title="Nothing to check" description="No shortfalls above yet." />
+        ) : !bankHoldings.length ? (
+          <EmptyState
+            title="Nothing found"
+            description="Bleedsbank and Bleedbanker don't have any of the Total to Buy items."
+          />
+        ) : (
+          <div className="grid gap-6 sm:grid-cols-2">
+            {bankHoldings.map(({ characterName, items }) => (
+              <div key={characterName}>
+                <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-faint">
+                  {characterName}
+                </p>
+                <ul className="divide-y divide-border rounded-lg border border-border">
+                  {items.map((item) => (
+                    <li key={item.itemName} className="flex items-center justify-between gap-4 px-3 py-2 text-sm">
+                      <span className="min-w-0 truncate text-ink">{item.itemName}</span>
+                      <span className="shrink-0 font-medium text-ink">{item.count}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        )}
+      </CardBody>
+    </Card>
+  );
+}
+
 export default function ShoppingPage() {
   const { user } = useAuth();
   const { data } = useUserCollections(user?.uid);
@@ -175,6 +272,7 @@ export default function ShoppingPage() {
   const [message, setMessage] = useState("");
 
   const profiles = data.shoppingProfiles;
+  const buyList = useBuyList(data.characters, accountNameById, profiles, inventoryItems);
 
   const selectedProfile = useMemo(
     () => profiles.find((profile) => profile.id === selectedId) || null,
@@ -318,11 +416,16 @@ export default function ShoppingPage() {
       <PageHeader title="Shopping Profiles" subtitle="Define what each class should carry into raid." />
 
       <BuyListSummary
-        characters={data.characters}
-        accountNameById={accountNameById}
-        profiles={profiles}
-        inventoryItems={inventoryItems}
+        classFilter={buyList.classFilter}
+        setClassFilter={buyList.setClassFilter}
+        minLevelFilter={buyList.minLevelFilter}
+        setMinLevelFilter={buyList.setMinLevelFilter}
+        filteredCharacters={buyList.filteredCharacters}
+        totals={buyList.totals}
+        mailList={buyList.mailList}
       />
+
+      <BankStockCard totals={buyList.totals} inventoryItems={inventoryItems} />
 
       <div className="grid gap-6 lg:grid-cols-[360px_1fr]">
         <Card className="h-fit">
