@@ -1,12 +1,19 @@
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { RAIDS } from "../data/raids";
 import { useUserCollections } from "../hooks/useUserCollections";
 import { formatCountdown, isRaidLocked } from "../utils/raidReset";
 import PageHeader from "../components/ui/PageHeader";
-import { Card } from "../components/ui/Card";
+import { Card, CardBody } from "../components/ui/Card";
+import { FormRow } from "../components/ui/Field";
+import Button from "../components/ui/Button";
 import Badge from "../components/ui/Badge";
 import EmptyState from "../components/ui/EmptyState";
+
+const WOW_CLASSES = [
+  "Druid", "Hunter", "Mage", "Paladin", "Priest",
+  "Rogue", "Shaman", "Warlock", "Warrior"
+];
 
 function factionOrder(faction) {
   const value = String(faction || "").toLowerCase();
@@ -36,7 +43,21 @@ function StatusCell({ status }) {
 export default function RaidsPage() {
   const { user } = useAuth();
   const { data } = useUserCollections(user?.uid);
-  const visibleCharacters = data.characters.filter((character) => character.showOnDashboard !== false);
+  const visibleCharacters = data.characters.filter(
+    (character) => character.showOnDashboard !== false && Number(character.level) >= 60
+  );
+
+  const [classFilters, setClassFilters] = useState([]);
+  const toggleClassFilter = (cls) => {
+    setClassFilters((prev) =>
+      prev.includes(cls) ? prev.filter((entry) => entry !== cls) : [...prev, cls]
+    );
+  };
+
+  const filteredCharacters = useMemo(
+    () => visibleCharacters.filter((character) => !classFilters.length || classFilters.includes(character.class)),
+    [visibleCharacters, classFilters]
+  );
 
   const accountNameById = useMemo(
     () => new Map(data.accounts.map((account) => [account.id, account.battleNetId])),
@@ -50,7 +71,7 @@ export default function RaidsPage() {
   );
 
   const sortedCharacters = useMemo(() => {
-    return [...visibleCharacters].sort((a, b) => {
+    return [...filteredCharacters].sort((a, b) => {
       const factionDiff = factionOrder(a.faction) - factionOrder(b.faction);
       if (factionDiff !== 0) return factionDiff;
 
@@ -60,7 +81,7 @@ export default function RaidsPage() {
 
       return a.name.localeCompare(b.name);
     });
-  }, [visibleCharacters, getStatus]);
+  }, [filteredCharacters, getStatus]);
 
   if (!user) {
     return (
@@ -73,15 +94,43 @@ export default function RaidsPage() {
 
   return (
     <div>
-      <PageHeader title="Raid Lockouts" subtitle="Weekly reset tracking across all of your characters." />
+      <PageHeader title="Raid Lockouts" subtitle="Weekly reset tracking across level 60 characters." />
+
+      <Card className="mb-6">
+        <CardBody className="py-4">
+          <FormRow label="Class" hint="Click to toggle. Leave none selected to include every class.">
+            <div className="flex flex-wrap gap-1.5">
+              {WOW_CLASSES.map((cls) => {
+                const active = classFilters.includes(cls);
+                return (
+                  <Button
+                    key={cls}
+                    type="button"
+                    size="sm"
+                    variant={active ? "primary" : "secondary"}
+                    onClick={() => toggleClassFilter(cls)}
+                  >
+                    {cls}
+                  </Button>
+                );
+              })}
+            </div>
+          </FormRow>
+        </CardBody>
+      </Card>
 
       {!visibleCharacters.length ? (
-        <EmptyState title="No characters yet" description="Add characters first from the Characters page." />
+        <EmptyState
+          title="No level 60 characters yet"
+          description="Add characters first from the Characters page, or level them up to 60."
+        />
       ) : !data.raidStatuses.length ? (
         <EmptyState
           title="No synced lockout data"
           description="Use Settings to connect your addon export files and sync."
         />
+      ) : !filteredCharacters.length ? (
+        <EmptyState title="No characters match" description="Adjust the class filter to see raid lockouts." />
       ) : (
         <Card className="overflow-hidden">
           <div className="scrollbar-thin overflow-x-auto">
