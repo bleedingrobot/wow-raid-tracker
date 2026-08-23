@@ -106,6 +106,7 @@ export default function DashboardPage() {
   const [sortBy, setSortBy] = useState("raids");
   const [buffReadinessClassFilter, setBuffReadinessClassFilter] = useState("all");
   const [buffReadinessRowFilter, setBuffReadinessRowFilter] = useState("all");
+  const [buffReadinessMinLevel, setBuffReadinessMinLevel] = useState("60");
   const [buffChipVisibility, setBuffChipVisibility] = useState("all");
   const [sectionOpen, setSectionOpen] = useState(() => readDashboardSectionState());
   const [cooldownAlerts, setCooldownAlerts] = useState([]);
@@ -188,6 +189,7 @@ export default function DashboardPage() {
           characterId: character.id,
           characterName: character.name,
           className: character.class,
+          level: character.level,
           requiredBuffs,
           missingBuffs,
           buffStatuses,
@@ -204,6 +206,9 @@ export default function DashboardPage() {
   );
 
   const filteredBuffReadinessRows = useMemo(() => {
+    const levelThreshold = Number(buffReadinessMinLevel);
+    const hasLevelThreshold = buffReadinessMinLevel !== "" && !Number.isNaN(levelThreshold);
+
     return buffReadinessRows.filter((row) => {
       if (buffReadinessClassFilter !== "all" && row.className !== buffReadinessClassFilter) {
         return false;
@@ -217,9 +222,15 @@ export default function DashboardPage() {
       if (buffChipVisibility === "missing" && row.missingBuffs.length === 0) {
         return false;
       }
+      if (hasLevelThreshold) {
+        const levelValue = Number(row.level);
+        if (Number.isNaN(levelValue) || levelValue < levelThreshold) {
+          return false;
+        }
+      }
       return true;
     });
-  }, [buffReadinessRows, buffReadinessClassFilter, buffReadinessRowFilter, buffChipVisibility]);
+  }, [buffReadinessRows, buffReadinessClassFilter, buffReadinessRowFilter, buffChipVisibility, buffReadinessMinLevel]);
 
   const collectLockedRaids = useCallback(() => {
     const now = new Date();
@@ -548,6 +559,15 @@ export default function DashboardPage() {
                 <option value="booned">Show booned</option>
                 <option value="missing">Show missing</option>
               </Select>
+              <Input
+                type="number"
+                min="0"
+                step="1"
+                className="w-auto"
+                value={buffReadinessMinLevel}
+                onChange={(event) => setBuffReadinessMinLevel(event.target.value)}
+                placeholder="Min level"
+              />
             </div>
 
             {filteredBuffReadinessRows.length ? (
