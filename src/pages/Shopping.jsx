@@ -25,7 +25,7 @@ const EMPTY_PROFILE = {
   items: []
 };
 
-const BANK_CHARACTER_NAMES = ["bleedsbank", "bleedbanker"];
+const BANK_CHARACTER_NAMES = ["bleedsbank", "bleedbanker", "justbagspace"];
 
 function normalizeName(value) {
   return String(value || "").trim().toLowerCase();
@@ -236,7 +236,7 @@ function BankStockCard({ totals, inventoryItems }) {
     <Card className="mb-6">
       <CardHeader
         title="Bank Alt Stock Check"
-        subtitle="Whether Bleedsbank or Bleedbanker already have any of the Total to Buy items, before you buy more."
+        subtitle="Whether Bleedsbank, Bleedbanker, or Justbagspace already have any of the Total to Buy items, before you buy more."
       />
       <CardBody>
         {!totals.length ? (
@@ -244,7 +244,7 @@ function BankStockCard({ totals, inventoryItems }) {
         ) : !bankHoldings.length ? (
           <EmptyState
             title="Nothing found"
-            description="Bleedsbank and Bleedbanker don't have any of the Total to Buy items."
+            description="Bleedsbank, Bleedbanker, and Justbagspace don't have any of the Total to Buy items."
           />
         ) : (
           <div className="grid gap-6 sm:grid-cols-2">
