@@ -75,10 +75,10 @@ function SidebarContent({ onNavigate }) {
   return (
     <div className="flex h-full flex-col">
       <div className="flex items-center gap-2 px-4 py-5">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-500 text-white shadow-sm shadow-brand-500/30">
-          <Swords className="h-4 w-4" strokeWidth={2.5} />
+        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-500 text-canvas shadow-sm shadow-brand-500/30">
+          <Swords className="h-4.5 w-4.5" strokeWidth={2.5} />
         </div>
-        <span className="text-sm font-semibold tracking-tight text-ink">Raid Tracker</span>
+        <span className="font-display text-base font-semibold tracking-wide text-brand-500">Raid Tracker</span>
       </div>
 
       <nav className="scrollbar-thin flex-1 space-y-5 overflow-y-auto px-3 pb-4">
@@ -126,7 +126,7 @@ function SidebarContent({ onNavigate }) {
             <button
               type="button"
               onClick={signOutUser}
-              className="rounded-md p-1.5 text-ink-faint hover:bg-white hover:text-ink"
+              className="rounded-md p-1.5 text-ink-faint hover:bg-surface-muted hover:text-ink"
               title="Sign out"
             >
               <LogOut className="h-3.5 w-3.5" />
@@ -172,7 +172,7 @@ export default function Layout({ children }) {
           >
             <Menu className="h-5 w-5" />
           </button>
-          <span className="text-sm font-semibold text-ink">Raid Tracker</span>
+          <span className="font-display text-sm font-semibold tracking-wide text-brand-500">Raid Tracker</span>
         </header>
 
         <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">

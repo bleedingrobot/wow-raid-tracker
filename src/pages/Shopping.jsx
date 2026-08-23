@@ -8,6 +8,7 @@ import {
   updateShoppingProfile
 } from "../services/dataService";
 import { computeShoppingNeeds } from "../utils/shoppingList";
+import { getItemIcon } from "../utils/itemIcons";
 import PageHeader from "../components/ui/PageHeader";
 import { Card, CardBody, CardHeader } from "../components/ui/Card";
 import { FormRow, Input, Select } from "../components/ui/Field";
@@ -154,7 +155,10 @@ function BuyListSummary({ classFilters, toggleClassFilter, minLevelFilter, setMi
               <ul className="divide-y divide-border rounded-lg border border-border">
                 {totals.map((item) => (
                   <li key={item.itemName} className="flex items-center justify-between gap-4 px-3 py-2 text-sm">
-                    <span className="min-w-0 truncate text-ink">{item.itemName}</span>
+                    <span className="flex min-w-0 items-center gap-2 truncate text-ink">
+                      <img src={getItemIcon(item.itemName)} alt="" className="h-6 w-6 shrink-0 rounded border border-border" />
+                      <span className="truncate">{item.itemName}</span>
+                    </span>
                     <span className="shrink-0 font-medium text-ink">{item.total}</span>
                   </li>
                 ))}
@@ -175,7 +179,10 @@ function BuyListSummary({ classFilters, toggleClassFilter, minLevelFilter, setMi
                     <ul className="mt-1 space-y-0.5">
                       {needs.map((need) => (
                         <li key={need.itemName} className="flex items-center justify-between gap-4 text-sm text-ink-soft">
-                          <span className="min-w-0 truncate">{need.itemName}</span>
+                          <span className="flex min-w-0 items-center gap-1.5 truncate">
+                            <img src={getItemIcon(need.itemName)} alt="" className="h-5 w-5 shrink-0 rounded border border-border" />
+                            <span className="truncate">{need.itemName}</span>
+                          </span>
                           <span className="shrink-0">x{need.need}</span>
                         </li>
                       ))}
@@ -256,7 +263,10 @@ function BankStockCard({ totals, inventoryItems }) {
                 <ul className="divide-y divide-border rounded-lg border border-border">
                   {items.map((item) => (
                     <li key={item.itemName} className="flex items-center justify-between gap-4 px-3 py-2 text-sm">
-                      <span className="min-w-0 truncate text-ink">{item.itemName}</span>
+                      <span className="flex min-w-0 items-center gap-2 truncate text-ink">
+                        <img src={getItemIcon(item.itemName)} alt="" className="h-6 w-6 shrink-0 rounded border border-border" />
+                        <span className="truncate">{item.itemName}</span>
+                      </span>
                       <span className="shrink-0 font-medium text-ink">{item.count}</span>
                     </li>
                   ))}
@@ -545,7 +555,10 @@ export default function ShoppingPage() {
                 <ul className="mt-3 divide-y divide-border">
                   {form.items.map((item) => (
                     <li key={item.itemName} className="flex items-center justify-between gap-4 py-2.5">
-                      <span className="min-w-0 truncate text-sm text-ink">{item.itemName}</span>
+                      <span className="flex min-w-0 items-center gap-2 truncate text-sm text-ink">
+                        <img src={getItemIcon(item.itemName)} alt="" className="h-6 w-6 shrink-0 rounded border border-border" />
+                        <span className="truncate">{item.itemName}</span>
+                      </span>
                       <div className="flex shrink-0 items-center gap-2">
                         <Input
                           type="number"

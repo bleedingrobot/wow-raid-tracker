@@ -1,5 +1,5 @@
 const inputClass =
-  "h-10 w-full rounded-lg border border-border bg-white px-3 text-sm text-ink placeholder:text-ink-faint outline-none transition-shadow focus:border-brand-400 focus:ring-2 focus:ring-brand-200";
+  "h-10 w-full rounded-lg border border-border bg-surface px-3 text-sm text-ink placeholder:text-ink-faint outline-none transition-shadow focus:border-brand-400 focus:ring-2 focus:ring-brand-200";
 
 export function Input({ className = "", ...props }) {
   return <input className={`${inputClass} ${className}`} {...props} />;
@@ -16,7 +16,7 @@ export function Select({ className = "", children, ...props }) {
 export function Textarea({ className = "", ...props }) {
   return (
     <textarea
-      className={`min-h-24 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm text-ink placeholder:text-ink-faint outline-none transition-shadow focus:border-brand-400 focus:ring-2 focus:ring-brand-200 ${className}`}
+      className={`min-h-24 w-full rounded-lg border border-border bg-surface px-3 py-2 text-sm text-ink placeholder:text-ink-faint outline-none transition-shadow focus:border-brand-400 focus:ring-2 focus:ring-brand-200 ${className}`}
       {...props}
     />
   );

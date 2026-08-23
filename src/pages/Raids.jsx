@@ -3,6 +3,7 @@ import { useAuth } from "../context/AuthContext";
 import { RAIDS } from "../data/raids";
 import { useUserCollections } from "../hooks/useUserCollections";
 import { formatCountdown, isRaidLocked } from "../utils/raidReset";
+import { getClassColor } from "../utils/classColors";
 import PageHeader from "../components/ui/PageHeader";
 import { Card, CardBody } from "../components/ui/Card";
 import { FormRow } from "../components/ui/Field";
@@ -150,7 +151,9 @@ export default function RaidsPage() {
               <tbody>
                 {sortedCharacters.map((character) => (
                   <tr key={character.id} className="border-b border-border last:border-0 hover:bg-surface-muted/60">
-                    <td className="px-4 py-3 font-medium text-ink">{character.name}</td>
+                    <td className="px-4 py-3 font-medium" style={{ color: getClassColor(character.class) }}>
+                      {character.name}
+                    </td>
                     <td className="px-4 py-3 text-ink-soft">{character.realm || "-"}</td>
                     <td className="px-4 py-3 text-ink-soft">
                       {character.accountId
