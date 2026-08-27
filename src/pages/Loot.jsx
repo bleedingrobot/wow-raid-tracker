@@ -12,6 +12,11 @@ import EmptyState from "../components/ui/EmptyState";
 
 const PRIORITY_TONE = { high: "bad", medium: "warn", low: "neutral" };
 
+const WOW_CLASSES = [
+  "Druid", "Hunter", "Mage", "Paladin", "Priest",
+  "Rogue", "Shaman", "Warlock", "Warrior"
+];
+
 export default function LootPage() {
   const { user } = useAuth();
   const { data } = useUserCollections(user?.uid);
@@ -19,7 +24,21 @@ export default function LootPage() {
     () => new Map(data.accounts.map((account) => [account.id, account.battleNetId])),
     [data.accounts]
   );
-  const visibleCharacters = data.characters.filter((character) => character.showOnDashboard !== false);
+  const visibleCharacters = data.characters.filter(
+    (character) => character.showOnDashboard !== false && Number(character.level) >= 60
+  );
+
+  const [classFilters, setClassFilters] = useState([]);
+  const toggleClassFilter = (cls) => {
+    setClassFilters((prev) =>
+      prev.includes(cls) ? prev.filter((entry) => entry !== cls) : [...prev, cls]
+    );
+  };
+
+  const filteredCharacters = useMemo(
+    () => visibleCharacters.filter((character) => !classFilters.length || classFilters.includes(character.class)),
+    [visibleCharacters, classFilters]
+  );
 
   const [form, setForm] = useState({
     characterId: "",
@@ -29,18 +48,18 @@ export default function LootPage() {
     iconUrl: ""
   });
 
-  const selectedCharacter = visibleCharacters.find((character) => character.id === form.characterId) || null;
+  const selectedCharacter = filteredCharacters.find((character) => character.id === form.characterId) || null;
 
   useEffect(() => {
-    if (!visibleCharacters.length) return;
+    if (!filteredCharacters.length) return;
 
     setForm((prev) => {
-      if (prev.characterId && visibleCharacters.some((character) => character.id === prev.characterId)) {
+      if (prev.characterId && filteredCharacters.some((character) => character.id === prev.characterId)) {
         return prev;
       }
-      return { ...prev, characterId: visibleCharacters[0].id };
+      return { ...prev, characterId: filteredCharacters[0].id };
     });
-  }, [visibleCharacters]);
+  }, [filteredCharacters]);
 
   if (!user) {
     return (
@@ -80,7 +99,30 @@ export default function LootPage() {
 
   return (
     <div>
-      <PageHeader title="Loot Wishlist" subtitle="Track and prioritize gear needs per character." />
+      <PageHeader title="Loot Wishlist" subtitle="Track and prioritize gear needs across level 60 characters." />
+
+      <Card className="mb-6">
+        <CardBody className="py-4">
+          <FormRow label="Class" hint="Click to toggle. Leave none selected to include every class.">
+            <div className="flex flex-wrap gap-1.5">
+              {WOW_CLASSES.map((cls) => {
+                const active = classFilters.includes(cls);
+                return (
+                  <Button
+                    key={cls}
+                    type="button"
+                    size="sm"
+                    variant={active ? "primary" : "secondary"}
+                    onClick={() => toggleClassFilter(cls)}
+                  >
+                    {cls}
+                  </Button>
+                );
+              })}
+            </div>
+          </FormRow>
+        </CardBody>
+      </Card>
 
       <div className="grid gap-6 lg:grid-cols-[360px_1fr]">
         <Card className="h-fit">
@@ -93,7 +135,7 @@ export default function LootPage() {
                   onChange={(event) => setForm((prev) => ({ ...prev, characterId: event.target.value }))}
                 >
                   <option value="">Select character</option>
-                  {visibleCharacters.map((character) => (
+                  {filteredCharacters.map((character) => (
                     <option key={character.id} value={character.id}>
                       {formatCharacterLabel(character)}
                     </option>
@@ -158,7 +200,16 @@ export default function LootPage() {
             }
           />
           <CardBody>
-            {!selectedCharacter ? (
+            {!filteredCharacters.length ? (
+              <EmptyState
+                title={visibleCharacters.length ? "No characters match" : "No level 60 characters yet"}
+                description={
+                  visibleCharacters.length
+                    ? "Adjust the class filter to see a character's wishlist."
+                    : "Add characters first from the Characters page, or level them up to 60."
+                }
+              />
+            ) : !selectedCharacter ? (
               <EmptyState title="No character selected" description="Choose a character to view their wishlist." />
             ) : !wishlist.length ? (
               <EmptyState title="Wishlist is empty" description="Add items using the form on the left." />
